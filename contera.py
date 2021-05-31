@@ -295,7 +295,6 @@ def run_contig_content_check(assembly_fasta, blast_db, threads, blast_content_fi
         assembly_fasta_dir = fasta_reader(assembly_fasta)
         contig_content_dir = contig_inside(bact_sequences, assembly_fasta_dir, contigs_content_file)
         write_most_common_percentage(assembly_fasta, assembly_fasta_dir, contig_content_dir, assembly_content_file)
-        print("Successfully done! Please cite Contera https://github.com/zilov/contera!\n")
     else:
         print("Blast file was no created! Close all tasks!\n")
 
@@ -336,7 +335,7 @@ if __name__ == '__main__':
     mode = args["mode"]
     debug = args["debug"]
 
-    execution_folder = os.path.dirname(os.path.abspath(getsourcefile(lambda: 0)))
+    execution_folder = os.path.dirname(os.path.dirname(os.path.abspath(getsourcefile(lambda: 0))))
     adapters_db = os.path.join(execution_folder, "adapters_db/adaptor_fasta.fna")
     if prefix == "0":
         prefix = os.path.splitext(os.path.basename(assembly_fasta))[0]

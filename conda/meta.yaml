@@ -1,0 +1,23 @@
+package:
+  name: contera
+  version: 1.0.0
+
+source:
+  git_url: https://github.com/zilov/contera.git
+
+requirements:
+  run:
+    - python
+    - unzip
+    - tar
+    - gzip
+    - blast
+
+test:
+  commands:
+    - contera -h
+
+about:
+  home: https://github.com/zilov/contera
+  license: GPLv3
+  summary: 'A tool to find and erase technical and non-target DNA contaminations'
