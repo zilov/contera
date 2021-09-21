@@ -9,6 +9,8 @@ import argparse
 import os
 from collections import defaultdict
 from inspect import getsourcefile
+from scripts.blastdb_downloader import download_blast
+from os import environ
 #from datetime import datetime
 
 
@@ -245,7 +247,7 @@ def adapters_blast_matches(blast_adapters_matches_file):
     return adapters_to_del
 
 
-def remove_adapters_and_short_contigs(assembly_fasta, adapters_to_del_dir):
+def remove_adapters_and_short_contigs(assembly_fasta, adapters_to_del_dir, length_threshold):
     fasta = fasta_reader(assembly_fasta)
     number_of_adapters = 0
     if adapters_to_del_dir:
@@ -263,7 +265,7 @@ def remove_adapters_and_short_contigs(assembly_fasta, adapters_to_del_dir):
 
     short_contig = []
     for key, value in fasta.items():
-        if len(value) < 200:
+        if len(value) < length_threshold:
             short_contig.append(key)
 
     number_of_short_contigs = len(short_contig)
@@ -299,11 +301,11 @@ def run_contig_content_check(assembly_fasta, blast_db, threads, blast_content_fi
         print("Blast file was no created! Close all tasks!\n")
 
 
-def run_adapter_removement(assembly_fasta, adapters_db, threads, adapters_blast_file, debug, assembly_filtered):
+def run_adapter_removement(assembly_fasta, adapters_db, length_threshold, threads, adapters_blast_file, debug, assembly_filtered):
     blasted = run_blast_adapters(assembly_fasta, adapters_db, threads, adapters_blast_file, debug)
     if blasted:
         adapters_to_del = adapters_blast_matches(adapters_blast_file)
-        filtered_fasta_dir = remove_adapters_and_short_contigs(assembly_fasta, adapters_to_del)
+        filtered_fasta_dir = remove_adapters_and_short_contigs(assembly_fasta, adapters_to_del, length_threshold)
         write_filtered_fasta(filtered_fasta_dir, assembly_filtered)
         print("Successfully done! Please cite Contera https://github.com/zilov/contera!\n")
     else:
@@ -312,11 +314,12 @@ def run_adapter_removement(assembly_fasta, adapters_db, threads, adapters_blast_
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Contera -  a tool for asseembly contamination detection and erasing')
-    parser.add_argument('-m', '--mode', help="mode to use [default = adapter]",
-                        choices=["aio", "adapter"], default="adapter")
-    parser.add_argument('-a', '--assembly', help="path to genome asssembly in FASTA format", required=True)
+    parser = argparse.ArgumentParser(description='Contera -  a tool for assembly contamination detection and erasing')
+    parser.add_argument('-m', '--mode', help="mode to use [default = aio]",
+                        choices=["aio", "cont", "adapter", "download_db"], default="aio")
+    parser.add_argument('-a', '--assembly', help="path to genome assembly in FASTA format", required=False)
     parser.add_argument('-p', '--prefix', help="prefix for output files", default="0")
+    parser.add_argument('-l', '--length', help="length threshhold to delete short contigs", type=int, default=200)
     parser.add_argument('-o', '--outdir', help='output directory', required=True)
     parser.add_argument('-db', '--blast_db', help='path to blast nucleotide (nt) database', required=False)
     parser.add_argument('-t', '--threads', help='number of threads [default == 8]', default="8")
@@ -330,10 +333,9 @@ if __name__ == '__main__':
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     threads = args["threads"]
-    if args["blast_db"]:
-        blast_db = os.path.abspath(args["blast_db"])
     mode = args["mode"]
     debug = args["debug"]
+    threshold = args["length"]
 
     execution_folder = os.path.dirname(os.path.dirname(os.path.abspath(getsourcefile(lambda: 0))))
     adapters_db = os.path.join(execution_folder, "adapters_db/adaptor_fasta.fna")
@@ -349,8 +351,20 @@ if __name__ == '__main__':
 
     # Check that all files required for each mode are in and run pipeline
     if mode == "adapter":
-        run_adapter_removement(assembly_fasta, adapters_db, threads, adapters_blast_file, debug, assembly_filtered)
-    elif mode == "aio":
+        run_adapter_removement(assembly_fasta, adapters_db, threshold, threads, adapters_blast_file, debug, assembly_filtered)
+    elif mode == "aio" or mode == "cont":
+        if args["blast_db"]:
+            blast_db = os.path.abspath(args["blast_db"])
+        elif "CONTERA_BLAST" in environ:
+            blast_db = environ["CONTERA_BLAST"]
+        else:
+            raise ValueError("To run contera in {mode} mode BLAST NT database path should be provided! Please use -db argument!")
         run_contig_content_check(assembly_fasta, blast_db, threads, content_blast_file, debug,
-                                 contera_contig_content, contera_assembly_content )
-        run_adapter_removement(assembly_fasta, adapters_db, threads, adapters_blast_file, debug, assembly_filtered)
+                                contera_contig_content, contera_assembly_content)
+        if mode == "aio":
+            run_adapter_removement(assembly_fasta, adapters_db, threshold, threads, adapters_blast_file, debug, assembly_filtered)
+    elif mode == "download_db":
+        blastdb = download_blast(outdir)
+        print("Adding blast_db in PATH")
+        path_command = f"export CONTERA_BLAST={os.path.join(outdir, "nt")}"
+        os.system(path_command)
