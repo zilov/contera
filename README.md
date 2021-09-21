@@ -1,5 +1,5 @@
 # contera
-Contera - a tool to detect nd delete non-target organisms and adapters contamination in your genome assembly. Contera Uses BLAST against NT and custom adapters databases to find contaminations.
+Contera - a tool to detect фnd delete non-target organisms and adapters contamination in your genome assembly. Contera Uses BLAST against NT and custom adapters databases to find contaminations.
 
 ## Dependencies
 Contera is written and tested on python >= 3.5. To run it you should install BLAST NT database on your system (~ 110GB)
