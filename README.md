@@ -12,11 +12,15 @@ To install contera with Conda use following command:
 
 And than activate the environment: `conda activate contera_env`
 
-## Download BLAST NT database
+## Download or set BLAST NT database
 
 If you do not have database in your system, you can download it with following command (**Please make sure that you have 120 Gb of free space!**):
 
 `contera -m download_db -o /path/to/outdir`
+
+If you already have database in your system, please add CONTERA_DB in your PATH with the following command (Make sure tha database was build with makeblastdb!):
+
+`export CONTERA_BLAST=/path/to/blast_db_folder/nt`
 
 ## Usage
 
@@ -29,6 +33,7 @@ Contera has three modes to run:
 2) Adapters - to check for contamination with adapters database, to run it use:
 
     `contera -m adapter -a /path/to/assembly.fasta -o /path/to/outdir`
+
 3) All-in-one (default) - to check for both adapters and other organisms contaminations, to run it use:
 
     `contera -a /path/to/assembly.fasta -db /path/to/blast_db -o /path/to/outdir`
